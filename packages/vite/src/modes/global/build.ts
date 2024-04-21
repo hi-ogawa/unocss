@@ -30,6 +30,7 @@ export function GlobalModeBuildPlugin(ctx: UnocssPluginContext<VitePluginConfig>
   let viteConfig: ResolvedConfig
 
   // use maps to differentiate multiple build. using outDir as key
+  let transformContext: PluginContext | undefined
   const cssPostPlugins = new Map<string | undefined, Plugin | undefined>()
   const cssPlugins = new Map<string | undefined, Plugin | undefined>()
 
@@ -40,7 +41,7 @@ export function GlobalModeBuildPlugin(ctx: UnocssPluginContext<VitePluginConfig>
     if (!cssPlugins.get(dir) || !postcss)
       return css
     // @ts-expect-error without this context absolute assets will throw an error
-    const result = await cssPlugins.get(dir).transform.call(ctx, css, id)
+    const result = await cssPlugins.get(dir).transform.call(transformContext ?? ctx, css, id)
     if (!result)
       return css
     if (typeof result === 'string')
@@ -76,6 +77,8 @@ export function GlobalModeBuildPlugin(ctx: UnocssPluginContext<VitePluginConfig>
         lastResult = undefined
       },
       transform(code, id) {
+        // eslint-disable-next-line ts/no-this-alias
+        transformContext = this
         if (filter(code, id))
           tasks.push(extract(code, id))
         return null
